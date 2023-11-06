@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>老师端-学生管理系统</title>
+    <script src="js/vue.js"></script>
+    <script src="js/axios-0.18.0.js"></script>
+    <!--要使用element就需要先导入下面这两个，一个js，一个css-->
+    <script src="element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+    <style>
+        .el-header {
+            background-color: #B3C0D1;
+            color: #333;
+            line-height: 60px;
+        }
+
+        .el-aside {
+            color: #333;
+        }
+
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="app" align="center">
+    <!--老师系统界面-->
+    <el-container style="height: 985px; border: 1px solid #eee">
+        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+            <!--默认打开第几个导航-->
+            <el-menu :default-openeds="['1','2','3','4']">
+                <!--成绩管理-->
+                <el-submenu index="1">
+                    <template slot="title"><i class="el-icon-s-data"></i>成绩管理</template>
+                    <el-menu-item-group>
+                        <template slot="title">查看</template>
+                        <el-menu-item index="1-1" v-on:click="moto1('browse_score')">成绩浏览</el-menu-item>
+                        <el-menu-item-group title="操作">
+                            <el-menu-item index="1-2" v-on:click="moto1('edit_score')">成绩编辑</el-menu-item>
+                        </el-menu-item-group>
+                    </el-menu-item-group>
+                </el-submenu>
+                <!--学生管理-->
+                <el-submenu index="2">
+                    <template slot="title"><i class="el-icon-user-solid"></i>学生管理</template>
+                    <el-menu-item-group>
+                        <template slot="title">查看</template>
+                        <el-menu-item index="2-1" v-on:click="moto1('browse_student')">学生浏览</el-menu-item>
+                    </el-menu-item-group>
+                    <el-menu-item-group title="操作">
+                        <el-menu-item index="2-2" v-on:click="moto1('edit_student')">编辑学生信息</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+                <!--课程管理-->
+                <el-submenu index="3">
+                    <template slot="title"><i class="el-icon-s-management"></i>课程管理</template>
+                    <el-menu-item-group>
+                        <template slot="title">查看</template>
+                        <el-menu-item index="3-1" v-on:click="moto1('browse_subject')">课程浏览</el-menu-item>
+                    </el-menu-item-group>
+                    <el-menu-item-group title="操作">
+                        <el-menu-item index="3-2" v-on:click="moto1('edit_subject')">编辑课程信息</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+                </el-submenu>
+                <!--班级管理-->
+                <el-submenu index="4">
+                    <template slot="title"><i class="el-icon-user-solid"></i>班级管理</template>
+                    <el-menu-item-group>
+                        <template slot="title">查看</template>
+                        <el-menu-item index="4-1" v-on:click="moto1('browse_class')">班级浏览</el-menu-item>
+                    </el-menu-item-group>
+                    <el-menu-item-group title="操作">
+                        <el-menu-item index="4-2" v-on:click="moto1('edit_class')">编辑班级信息</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+            </el-menu>
+        </el-aside>
+
+        <el-container>
+            <el-header style="text-align: right; font-size: 12px">
+                <el-dropdown>
+                    <!--单击图标出现下沉选框-->
+                    <i class="el-icon-setting" style="margin-right: 15px"></i>
+                    <el-dropdown-menu slot="dropdown">
+                        <!--之后可以在这绑定location跳转，实现退出-->
+                        <el-dropdown-item v-on:click="quit">退出系统</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+                <span>
+                    欢迎你，{{Username}}
+                </span>
+            </el-header>
+
+            <!--成绩浏览-->
+            <el-main v-if="moveto1=='browse_score'">
+                <!--表单提交搜索-->
+                <el-form :inline="true" :model="student_score" class="demo-form-inline">
+                    <el-form-item label="学号">
+                        <el-input v-model="student_score.studentid" placeholder="学号"></el-input>
+                    </el-form-item>
+                    <el-form-item label="班级">
+                        <el-input v-model="student_score.classid" placeholder="班级"></el-input>
+                    </el-form-item>
+                    <el-form-item label="姓名">
+                        <el-input v-model="student_score.student_name" placeholder="姓名"></el-input>
+                    </el-form-item>
+                    <el-form-item label="学科">
+                        <el-input v-model="student_score.subjectid" placeholder="学科"></el-input>
+                    </el-form-item>
+
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <!--操作按钮-->
+                <el-row>
+                    <el-button type="success" round v-on:click="selectallscore">成绩浏览</el-button>
+                </el-row>
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe="true"
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="studentid"
+                                label="学号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="student_name"
+                                label="姓名"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="subjectid"
+                                label="学科"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="score"
+                                align="center"
+                                label="分数"
+                        >
+                        </el-table-column>
+
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+
+            <!--成绩编辑-->
+            <el-main v-if="moveto1=='edit_score'">
+                <!--表单提交搜索-->
+                <el-form :inline="true" :model="student_score" class="demo-form-inline">
+                    <el-form-item label="学号">
+                        <el-input v-model="student_score.studentid" placeholder="学号"></el-input>
+                    </el-form-item>
+                    <el-form-item label="班级">
+                        <el-input v-model="student_score.classid" placeholder="班级"></el-input>
+                    </el-form-item>
+                    <el-form-item label="姓名">
+                        <el-input v-model="student_score.student_name" placeholder="姓名"></el-input>
+                    </el-form-item>
+                    <el-form-item label="学科">
+                        <el-input v-model="student_score.subjectid" placeholder="学科"></el-input>
+                    </el-form-item>
+
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <!--批量操作按钮-->
+                <el-row>
+                    <el-button type="primary" plain @click="dialogVisible = true">成绩录入</el-button>
+                    <el-button plain v-on:click="selectallscore">刷新</el-button>
+                </el-row>
+                <!--添加成绩功能的对话框表单-->
+                <el-dialog
+                        title="成绩录入"
+                        :visible.sync="dialogVisible"
+                        width="30%"
+                >
+                    <!--从这里开始写弹窗的内容-->
+                    <el-form ref="form" :model="add_student_score" label-width="80px">
+
+                        <el-form-item label="学号">
+                            <el-input v-model="add_student_score.studentid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="学科">
+                            <el-input v-model="add_student_score.subjectid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="分数">
+                            <el-input v-model="add_student_score.score"></el-input>
+                        </el-form-item>
+                        <!--下方弹窗按钮-->
+                        <el-form-item>
+                            <el-button type="primary" @click="addScore">录入</el-button>
+                            <el-button @click="dialogVisible = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+
+                <!--修改成绩信息的对话框表单-->
+                <el-dialog
+                        title="成绩修改"
+                        :visible.sync="dialogVisible1"
+                        width="30%"
+                >
+                    <!--从这里开始写弹窗的内容-->
+                    <el-form ref="form" :model="update_student_score" label-width="80px">
+
+                        <el-form-item label="学号">
+                            <el-input v-model="update_student_score.studentid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="姓名">
+                            <el-input v-model="update_student_score.student_name"></el-input>
+                        </el-form-item>
+                        <el-form-item label="班级">
+                            <el-input v-model="update_student_score.classid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="学科">
+                            <el-input v-model="update_student_score.subjectid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="分数">
+                            <el-input v-model="update_student_score.score"></el-input>
+                        </el-form-item>
+                        <!--下方弹窗按钮-->
+                        <el-form-item>
+                            <el-button type="primary" @click="update_Score">修改</el-button>
+                            <el-button @click="dialogVisible1= false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="studentid"
+                                label="学号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="student_name"
+                                label="姓名"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="subjectid"
+                                label="学科"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="score"
+                                align="center"
+                                label="分数"
+                        >
+                        </el-table-column>
+                        <!--下面是成绩编辑操作模块 两个按钮-->
+                        </el-table-column>
+                        <el-table-column
+                                align="center"
+                                label="操作">
+                            <el-row>
+                                <!--在这里可以给按钮绑定事件-->
+                                <el-button type="primary" @click="updatedataBackShow">修改</el-button>
+                                <el-button type="danger" v-on:click="deletedata">删除</el-button>
+                            </el-row>
+
+                        </el-table-column>
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+
+            <!--学生浏览-->
+            <el-main v-if="moveto1=='browse_student'">
+                <!--表单提交搜索-->
+                <el-form :inline="true" :model="student_score" class="demo-form-inline">
+                    <el-form-item label="学号">
+                        <el-input v-model="student_score.studentid" placeholder="学号"></el-input>
+                    </el-form-item>
+                    <el-form-item label="班级">
+                        <el-input v-model="student_score.classid" placeholder="班级"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <!--操作按钮-->
+                <el-row>
+                    <el-button type="success" round v-on:click="selectallstudnet">学生浏览</el-button>
+                </el-row>
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe="true"
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="student_id"
+                                label="学号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="student_name"
+                                label="姓名"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange_student"
+                        @current-change="handleCurrentChange_student"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+            <!--学生编辑-->
+            <el-main v-if="moveto1=='edit_student'">
+                <!--表单提交搜索-->
+                <el-form :inline="true" :model="student_score" class="demo-form-inline">
+                    <el-form-item label="学号">
+                        <el-input v-model="student_score.studentid" placeholder="学号"></el-input>
+                    </el-form-item>
+                    <el-form-item label="班级">
+                        <el-input v-model="student_score.classid" placeholder="班级"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <!--批量操作按钮-->
+                <el-row>
+                    <el-button type="primary" plain @click="dialogVisible2 = true">添加学生信息</el-button>
+                    <el-button plain v-on:click="selectallstudnet">刷新</el-button>
+                </el-row>
+                <!--添加成绩功能的对话框表单-->
+                <el-dialog
+                        title="添加学生信息"
+                        :visible.sync="dialogVisible2"
+                        width="30%"
+                >
+                    <!--从这里开始写弹窗的内容-->
+                    <el-form ref="form" :model="add_student" label-width="80px">
+
+                        <el-form-item label="学号">
+                            <el-input v-model="add_student.student_id"></el-input>
+                        </el-form-item>
+                        <el-form-item label="姓名">
+                            <el-input v-model="add_student.student_name"></el-input>
+                        </el-form-item>
+                        <el-form-item label="班级">
+                            <el-input v-model="add_student.classid"></el-input>
+                        </el-form-item>
+                        <!--下方弹窗按钮-->
+                        <el-form-item>
+                            <el-button type="primary" @click="addStudent">录入</el-button>
+                            <el-button @click="dialogVisible2 = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+
+                <!--修改成绩信息的对话框表单-->
+                <el-dialog
+                        title="成绩修改"
+                        :visible.sync="dialogVisible3"
+                        width="30%"
+                >
+                    <!--从这里开始写弹窗的内容-->
+                    <el-form ref="form" :model="update_student" label-width="80px">
+
+                        <el-form-item label="学号">
+                            <el-input v-model="update_student.student_id"></el-input>
+                        </el-form-item>
+                        <el-form-item label="姓名">
+                            <el-input v-model="update_student.student_name"></el-input>
+                        </el-form-item>
+                        <el-form-item label="班级">
+                            <el-input v-model="update_student.classid"></el-input>
+                        </el-form-item>
+
+                        <!--下方弹窗按钮-->
+                        <el-form-item>
+                            <el-button type="primary" @click="update_Student">修改</el-button>
+                            <el-button @click="dialogVisible3= false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="student_id"
+                                label="学号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="student_name"
+                                label="姓名"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                align="center"
+                                label="操作">
+                            <el-row>
+                                <!--在这里可以给按钮绑定事件-->
+                                <el-button type="primary" @click="student_updatedataBackShow">修改</el-button>
+                                <el-button type="danger" v-on:click="deletestudent">删除</el-button>
+                            </el-row>
+
+                        </el-table-column>
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange_student"
+                        @current-change="handleCurrentChange_student"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+
+            <!--课程浏览-->
+            <el-main v-if="moveto1=='browse_subject'">
+                <!--操作按钮-->
+                <el-row>
+                    <el-button type="primary" round v-on:click="selectallsubject">课程刷新</el-button>
+                </el-row>
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe="true"
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="teacherid"
+                                label="任课教师号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="subjectid"
+                                label="课程"
+                                align="center"
+
+                        >
+                        </el-table-column>
+
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange_subject"
+                        @current-change="handleCurrentChange_subject"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+            <!--课程编辑-->
+            <el-main v-if="moveto1=='edit_subject'">
+                <!--批量操作按钮-->
+                <el-row>
+                    <el-button type="primary" plain @click="dialogVisible4 = true">添加课程</el-button>
+                    <el-button plain v-on:click="selectallsubject">刷新</el-button>
+                </el-row>
+                <!--添加课程功能的对话框表单-->
+                <el-dialog
+                        title="添加课程"
+                        :visible.sync="dialogVisible4"
+                        width="30%"
+                >
+                    <!--从这里开始写弹窗的内容-->
+                    <el-form ref="form" :model="add_subject" label-width="80px">
+
+                        <el-form-item label="课程">
+                            <el-input v-model="add_subject.subjectid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="教师号">
+                            <el-input v-model="add_subject.teacherid"></el-input>
+                        </el-form-item>
+                        <!--下方弹窗按钮-->
+                        <el-form-item>
+                            <el-button type="primary" @click="addSubject">添加课程</el-button>
+                            <el-button @click="dialogVisible4 = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="teacherid"
+                                label="任课教师号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="subjectid"
+                                label="课程"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                align="center"
+                                label="操作">
+                            <el-row>
+                                <!--在这里可以给按钮绑定事件-->
+                                <el-button type="danger" v-on:click="deletesubject">删除</el-button>
+                            </el-row>
+
+                        </el-table-column>
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange_subject"
+                        @current-change="handleCurrentChange_subject"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+
+            <!--班级浏览-->
+            <el-main v-if="moveto1=='browse_class'">
+                <!--操作按钮-->
+                <el-row>
+                    <el-button type="primary" round v-on:click="selectallclass">班级刷新</el-button>
+                </el-row>
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe="true"
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="teacherid"
+                                label="任课教师号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="任课班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange_class"
+                        @current-change="handleCurrentChange_class"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+            <!--班级管理-->
+            <el-main v-if="moveto1=='edit_class'">
+                <!--批量操作按钮-->
+                <el-row>
+                    <el-button type="primary" plain @click="dialogVisible5 = true">添加任课班级</el-button>
+                    <el-button plain v-on:click="selectallclass">刷新</el-button>
+                </el-row>
+                <!--添加课程功能的对话框表单-->
+                <el-dialog
+                        title="添加课程"
+                        :visible.sync="dialogVisible5"
+                        width="30%"
+                >
+                    <!--从这里开始写弹窗的内容-->
+                    <el-form ref="form" :model="add_class" label-width="80px">
+
+                        <el-form-item label="班级">
+                            <el-input v-model="add_class.classid"></el-input>
+                        </el-form-item>
+                        <el-form-item label="教师号">
+                            <el-input v-model="add_class.teacherid"></el-input>
+                        </el-form-item>
+                        <!--下方弹窗按钮-->
+                        <el-form-item>
+                            <el-button type="primary" @click="addClass">任课</el-button>
+                            <el-button @click="dialogVisible5 = false">取消</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="teacherid"
+                                label="任课教师号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="任课班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                align="center"
+                                label="操作">
+                            <el-row>
+                                <!--在这里可以给按钮绑定事件-->
+                                <el-button type="danger" v-on:click="deleteclass">删除</el-button>
+                            </el-row>
+
+                        </el-table-column>
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange_subject"
+                        @current-change="handleCurrentChange_subject"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+        </el-container>
+    </el-container>
+
+</div>
+</body>
+<!--因为element是基于vue的，所有我们还得先要创建vue的核心对象-->
+<script>
+    new Vue({
+        el: "#app",
+        mounted(){
+           /*当页面加载完成后直接自动执行获取用户名*/
+            var _this0=this;
+            axios({
+                method:"get",
+                url:"http://localhost:8080/Sams_homework_war/ReturnUserName",
+            }).then(function (resp) {
+               _this0.Username= resp.data;
+            })
+        },
+        methods: {
+            addClass(){
+                var _this19=this;
+                axios({
+                    method:"post",
+                    url:"http://localhost:8080/Sams_homework_war/Addclass",
+                    data:_this19.add_class
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        /*成绩录入成功后便可关闭弹窗*/
+                        _this19.dialogVisible5=false;
+                        /*成功录入后便自动刷新一下页面*/
+                        _this19.selectallclass();
+                        /*弹窗提示添加成功！*/
+                        _this19.$message({
+                            message: '恭喜您，添加任课班级成功！',
+                            type: 'success'
+                        });
+                    }else if (resp.data !="success"){
+                        /*录入不成功*/
+                        _this19.dialogVisible5=false;
+                        _this19.$message.error('抱歉，添加任课班级失败！');
+                    }
+                })
+            },
+            /*添加课程*/
+            addSubject(){
+                var _this17=this;
+                axios({
+                    method:"post",
+                    url:"http://localhost:8080/Sams_homework_war/Addsubject",
+                    data:_this17.add_subject
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        /*成绩录入成功后便可关闭弹窗*/
+                        _this17.dialogVisible4=false;
+                        /*成功录入后便自动刷新一下页面*/
+                        _this17.selectallsubject();
+                        /*弹窗提示添加成功！*/
+                        _this17.$message({
+                            message: '恭喜您，添加课程成功！',
+                            type: 'success'
+                        });
+                    }else if (resp.data !="success"){
+                        /*录入不成功*/
+                        _this17.dialogVisible4=false;
+                        _this17.$message.error('抱歉，老师只能为自己添加课程！');
+                    }
+                })
+            },
+
+            /*添加学生*/
+            addStudent(){
+                var _this8=this;
+                axios({
+                    method:"post",
+                    url:"http://localhost:8080/Sams_homework_war/Addstudent",
+                    data:_this8.add_student
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        /*成绩录入成功后便可关闭弹窗*/
+                        _this8.dialogVisible2=false;
+                        /*成功录入后便自动刷新一下页面*/
+                        _this8.selectallstudnet();
+                        /*弹窗提示添加成功！*/
+                        _this8.$message({
+                            message: '恭喜您，添加学生信息成功！',
+                            type: 'success'
+                        });
+                    }else if (resp.data !="success"){
+                        /*录入不成功*/
+                        _this8.dialogVisible2=false;
+                        _this8.$message.error('抱歉，学生信息添加失败！');
+                    }
+                })
+            },
+            /*修改成绩数据*/
+            update_Score(){
+                var _this=this;
+                axios({
+                    method:"post",
+                    url:"http://localhost:8080/Sams_homework_war/Score_update",
+                    data:_this.update_student_score
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        /*成绩录入成功后便可关闭弹窗*/
+                        _this.dialogVisible1= false;
+                        /*成功录入后便自动刷新一下页面*/
+                        _this.selectallscore();
+                        /*弹窗提示添加成功！*/
+                        _this.$message({
+                            message: '恭喜您，修改成功！',
+                            type: 'success'
+                        });
+                    }else if (resp.data !="success"){
+                        /*录入不成功*/
+                        _this.dialogVisible1= false;
+                        _this.$message.error('抱歉，修改失败！');
+                    }
+                })
+            },
+            /*修改学生数据*/
+            update_Student(){
+                var _this10=this;
+                axios({
+                    method:"post",
+                    url:"http://localhost:8080/Sams_homework_war/Student_update",
+                    data:_this10.update_student
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        /*成绩录入成功后便可关闭弹窗*/
+                        _this10.dialogVisible3= false;
+                        /*成功录入后便自动刷新一下页面*/
+                        _this10.selectallstudnet();
+                        /*弹窗提示添加成功！*/
+                        _this10.$message({
+                            message: '恭喜您，修改成功！',
+                            type: 'success'
+                        });
+                    }else if (resp.data !="success"){
+                        /*录入不成功*/
+                        _this10.dialogVisible3= false;
+                        _this10.$message.error('抱歉，修改失败！');
+                    }
+                })
+            },
+            /*修改成绩数据前的回显*/
+            updatedataBackShow(){
+                this.dialogVisible1 = true;
+                let element = this.multipleSelection[0];
+                this.update_student_score.studentid=element.studentid;
+                this.update_student_score.student_name=element.student_name;
+                this.update_student_score.classid=element.classid;
+                this.update_student_score.subjectid=element.subjectid;
+                this.update_student_score.score=element.score;
+            },
+            /*修改学生数据前的回显*/
+            student_updatedataBackShow(){
+                this.dialogVisible3 = true;
+                let element = this.multipleSelection[0];
+               this.update_student.student_id=element.student_id;
+               this.update_student.student_name=element.student_name;
+               this.update_student.classid=element.classid;
+            },
+
+            /*删除成绩数据*/
+            deletedata(){
+                let element = this.multipleSelection[0];
+                this.deleteStudentid=element.studentid;
+                this.deleteSubjectid=element.subjectid;
+                var _this5=this;
+                axios({
+                    method:"get",
+                    url:"http://localhost:8080/Sams_homework_war/Score_delete?deleteStudentid="+_this5.deleteStudentid+"&deleteSubjectid="+_this5.deleteSubjectid,
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        _this5.$message({
+                            message: '恭喜您，删除成功！',
+                            type: 'success'
+                        });
+                        /*删除完成后再从新查询刷新一遍*/
+                        _this5.selectallscore();
+                    }else {
+                        _this5.$message.error('抱歉，删除失败！');
+                    }
+                })
+            },
+
+            /*删除学生数据*/
+            deletestudent(){
+                let element = this.multipleSelection[0];
+                this.deleteStudentid=element.student_id;
+                var _this11=this;
+                axios({
+                    method:"get",
+                    url:"http://localhost:8080/Sams_homework_war/Student_delete?deleteStudentid="+_this11.deleteStudentid,
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        _this11.$message({
+                            message: '恭喜您，删除成功！',
+                            type: 'success'
+                        });
+                        /*删除完成后再从新查询刷新一遍*/
+                        _this11.selectallstudnet();
+                    }else {
+                        _this11.$message.error('抱歉，删除失败！');
+                    }
+                })
+            },
+            /*删除课程数据*/
+            deletesubject(){
+                let element = this.multipleSelection[0];
+                this.deleteSubjectid=element.subjectid;
+                var _this19=this;
+                axios({
+                    method:"get",
+                    url:"http://localhost:8080/Sams_homework_war/Subject_delete?deleteSubjectid="+_this19.deleteSubjectid,
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        _this19.$message({
+                            message: '恭喜您，删除成功！',
+                            type: 'success'
+                        });
+                        /*删除完成后再从新查询刷新一遍*/
+                        _this19.selectallsubject();
+                    }else {
+                        _this19.$message.error('抱歉，删除失败！');
+                    }
+                })
+            },
+
+            /*删除任课班级*/
+            deleteclass(){
+                let element = this.multipleSelection[0];
+                this.deleteClassid=element.classid;
+                var _this20=this;
+                axios({
+                    method:"get",
+                    url:"http://localhost:8080/Sams_homework_war/Class_delete?deleteClassid="+_this20.deleteClassid,
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        _this20.$message({
+                            message: '恭喜您，删除成功！',
+                            type: 'success'
+                        });
+                        /*删除完成后再从新查询刷新一遍*/
+                        _this20.selectallclass();
+                    }else {
+                        _this20.$message.error('抱歉，删除失败！');
+                    }
+                })
+            },
+
+
+            /*退出系统*/
+            quit() {
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/Sams_homework_war/quit",
+                    data:this.quit1
+                }).then(function (resp) {
+
+                });
+            },
+            /*左侧导航栏实现页面跳转*/
+            moto1(id) {
+                var myid = id;
+                switch (myid) {
+                    case 'browse_score':
+                        this.moveto1 = "browse_score";
+                        break;
+                    case 'edit_score':
+                        this.moveto1 = "edit_score";
+                        break;
+                    case 'browse_student':
+                        this.moveto1 = "browse_student";
+                        break;
+                    case 'edit_student':
+                        this.moveto1 = "edit_student";
+                        break
+                    case 'browse_subject':
+                        this.moveto1 = "browse_subject";
+                        break;
+                    case 'edit_subject':
+                        this.moveto1 = "edit_subject";
+                        break;
+                    case 'browse_class':
+                        this.moveto1 = 'browse_class';
+                        break;
+                    case 'edit_class':
+                        this.moveto1 = 'edit_class';
+                        break;
+                }
+            },
+            /*课程浏览（带分页功能）*/
+            selectallsubject(){
+                var this17 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Selectbypage_subject?currentPage="+this17.currentPage+"&pageSize="+this17.pageSize+"&Username="+this17.Username,
+                }).then(function (resp) {
+                    /*设置表格数据*/
+                    this17.tableData = resp.data.rows;
+                    /*设置数据总数*/
+                    this17.totalCount=resp.data.totalCount;
+                });
+            },
+            /*班级浏览（带分页功能）*/
+            selectallclass(){
+                var this16 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Selectbypage_class?currentPage="+this16.currentPage+"&pageSize="+this16.pageSize+"&Username="+this16.Username,
+                }).then(function (resp) {
+                    /*设置表格数据*/
+                    this16.tableData = resp.data.rows;
+                    /*设置数据总数*/
+                    this16.totalCount=resp.data.totalCount;
+                });
+            },
+            /*成绩浏览(带分页功能)*/
+            selectallscore() {
+                /*var this3 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Browse_score_Servlet"
+                }).then(function (resp) {
+                    this3.tableData = resp.data;
+                });*/
+                var this3 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Selectbypage?currentPage="+this3.currentPage+"&pageSize="+this3.pageSize,
+                }).then(function (resp) {
+                    /*设置表格数据*/
+                    this3.tableData = resp.data.rows;
+                    /*设置数据总数*/
+                    this3.totalCount=resp.data.totalCount;
+                });
+
+            },
+
+            /*学生浏览(带分页功能)*/
+            selectallstudnet(){
+                var this12 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Servletbypage_student?currentPage="+this12.currentPage+"&pageSize="+this12.pageSize,
+                }).then(function (resp) {
+                    /*设置表格数据*/
+                    this12.tableData = resp.data.rows;
+                    /*设置数据总数*/
+                    this12.totalCount=resp.data.totalCount;
+                });
+
+            },
+            tableRowClassName({row, rowIndex}) {
+
+                /*if (rowIndex == 1) {
+                    return 'danger-row';
+                } else if (rowIndex == 3) {
+                    return 'success-row';
+                }*/
+                return '';
+            },
+            /*复选框对应的方法，能够实现识别选择，完成批量删除等操作*/
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+                console.log(this.multipleSelection)
+            },
+            /*表单搜索对应的方法*/
+            onSubmit() {
+                /*表单搜索后便向servlet发送请求，然后在servlet返回数据库里查出来的数据*/
+                var this4 = this;
+                axios({
+                    method: "post",
+                    url: "http://localhost:8080/Sams_homework_war/Score_condition_select?currentPage="+this4.currentPage+"&pageSize="+this4.pageSize,
+                    data:this4.student_score
+                }).then(function (resp) {
+                    /*设置表格数据*/
+                    this4.tableData = resp.data.rows;
+                    /*设置数据总数*/
+                    this4.totalCount=resp.data.totalCount;
+                    /*提示*/
+                    this4.$message('已成功查询出结果！');
+                });
+                console.log(this.student_score);
+            },
+
+            /*成绩录入的添加操作的表单提交对应的方法*/
+            addScore() {
+                var _this1=this;
+                axios({
+                    method:"post",
+                    url:"http://localhost:8080/Sams_homework_war/addscore",
+                    data:_this1.add_student_score
+                }).then(function (resp) {
+                    if (resp.data=="success"){
+                        /*成绩录入成功后便可关闭弹窗*/
+                        _this1.dialogVisible=false;
+                        /*成功录入后便自动刷新一下页面*/
+                        _this1.selectallscore();
+                        /*弹窗提示添加成功！*/
+                        _this1.$message({
+                            message: '恭喜您，成绩添加成功！',
+                            type: 'success'
+                        });
+                    }else if (resp.data !="success"){
+                        /*录入不成功*/
+                        _this1.dialogVisible=false;
+                        _this1.$message.error('抱歉，成绩添加失败！');
+                    }
+                })
+                //console.log(this.add_student_score);
+            },
+            /*成绩分页工具条对应的方法*/
+            handleSizeChange(val) {
+                /*设置每页显示的条数*/
+                this.pageSize=val;
+                this.selectallscore();
+            },
+            handleCurrentChange(val) {
+                /*设置当前页码*/
+                this.currentPage=val;
+                this.selectallscore();
+            },
+
+            /*学生分页工具对应的方法*/
+            handleSizeChange_student(val) {
+                /*设置每页显示的条数*/
+                this.pageSize=val;
+                this.selectallstudnet();
+            },
+            handleCurrentChange_student(val) {
+                /*设置当前页码*/
+                this.currentPage=val;
+                this.selectallstudnet();
+            },
+            /*课程分页工具对应的方法*/
+            handleSizeChange_subject(val) {
+                /*设置每页显示的条数*/
+                this.pageSize=val;
+                this.selectallsubject();
+            },
+            handleCurrentChange_subject(val) {
+                /*设置当前页码*/
+                this.currentPage=val;
+                this.selectallsubject();
+            },
+            /*班级分页工具对应的方法*/
+            handleSizeChange_class(val) {
+                /*设置每页显示的条数*/
+                this.pageSize=val;
+                this.selectallclass();
+            },
+            handleCurrentChange_class(val) {
+                /*设置当前页码*/
+                this.currentPage=val;
+                this.selectallclass();
+            }
+
+        },
+        data() {
+            return {
+
+                /*用来配合退出系统的*/
+                quit1:"yes",
+                /*用来配合左边导航栏跳转*/
+                moveto1: "",
+                /*表格下面分页条的数据模型 表示当前页码,数据总数，以及每页显示的条数*/
+                currentPage: 1,
+                totalCount:100,
+                pageSize:10,
+                /*录入成绩的表单的弹窗数据模型*/
+                add_student_score: {
+                    studentid: '',
+                    subjectid: "",
+                    score: ""
+                },
+                /*添加学生的表单的弹窗数据模型*/
+                add_student:{
+                   student_id:'',
+                   student_name:'',
+                   classid:''
+                },
+                /*添加课程的表单的弹窗数据模型*/
+                add_subject:{
+                    teacherid:'',
+                    subjectid:'',
+                },
+                /*添加班级的表单的弹窗数据模型*/
+                add_class:{
+                    classid:'',
+                    teacherid: '',
+                },
+
+                /*修改成绩的表单弹窗数据模型*/
+                update_student_score: {
+                    studentid: '',
+                    subjectid: "",
+                    score: "",
+                    classid: "",
+                    student_name: '',
+                },
+                /*修改学生的表单弹窗数据模型*/
+                update_student:{
+                    student_id:'',
+                    student_name:'',
+                    classid:''
+                },
+
+                /*表单查询用到的数据模型*/
+                student_score: {
+                    studentid: '',
+                    classid: "",
+                    student_name: '',
+                    subjectid: "",
+                },
+                /*用来控制弹窗表单是否展示的数据模型*/
+                dialogVisible: false,
+                /*用来和复选框对应的数据模型，把选中的数据存到这个数组里*/
+                multipleSelection: [],
+                /*表格数据*/
+                tableData: [],
+                /*删除和修改操作用到的数据模型*/
+                deleteStudentid:"",
+                deleteSubjectid:"",
+                /*用来控制修改成绩操作的弹窗是否显示的数据模型*/
+                dialogVisible1: false,
+                /*登录成功后用来显示账号的数据模型*/
+                Username:"",
+
+                /*学生管理中添加学生信息弹窗是否出现的数据模型*/
+                dialogVisible2:false,
+                /*修改学生信息的弹框是否显示的数据模型*/
+                dialogVisible3:false,
+
+                /*添加课程信息弹窗是否出现的数据模型*/
+                dialogVisible4:false,
+                /*添加任课班级弹窗是否出现的数据模型*/
+                dialogVisible5:false,
+
+            }
+        }
+
+    });
+</script>
+</html>

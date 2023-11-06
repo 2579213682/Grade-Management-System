@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>学生端-学生管理系统</title>
+    <script src="js/vue.js"></script>
+    <script src="js/axios-0.18.0.js"></script>
+    <!--要使用element就需要先导入下面这两个，一个js，一个css-->
+    <script src="element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+    <style>
+        .el-header {
+            background-color: #B3C0D1;
+            color: #333;
+            line-height: 60px;
+        }
+
+        .el-aside {
+            color: #333;
+        }
+
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="app" align="center">
+    <!--学生系统界面-->
+    <el-container style="height: 985px; border: 1px solid #eee">
+        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+            <!--默认打开第几个导航-->
+            <el-menu :default-openeds="['1']">
+                <!--成绩管理-->
+                <el-submenu index="1">
+                    <template slot="title"><i class="el-icon-s-data"></i>成绩</template>
+                    <el-menu-item-group>
+                        <template slot="title">成绩查询</template>
+                        <el-menu-item index="1-1" v-on:click="moto1('browse_score')">成绩查询</el-menu-item>
+                    </el-menu-item-group>
+                </el-submenu>
+
+            </el-menu>
+        </el-aside>
+
+        <el-container>
+            <el-header style="text-align: right; font-size: 12px">
+                <el-dropdown>
+                    <!--单击图标出现下沉选框-->
+                    <i class="el-icon-setting" style="margin-right: 15px"></i>
+                    <el-dropdown-menu slot="dropdown">
+                        <!--之后可以在这绑定location跳转，实现退出-->
+                        <el-dropdown-item v-on:click="quit">退出系统</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+                <span>
+                    欢迎你，{{Username}}
+                </span>
+            </el-header>
+
+            <!--成绩浏览-->
+            <el-main v-if="moveto1=='browse_score'">
+                <!--操作按钮-->
+                <el-row>
+                    <el-button type="success" round v-on:click="selectallscore">成绩浏览</el-button>
+                </el-row>
+                <!--在下面这里进行遍历数据显示-->
+                <template>
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%"
+                            :row-class-name="tableRowClassName"
+                            @selection-change="handleSelectionChange"
+                            stripe="true"
+                    >
+                        <!--复选框-->
+                        <el-table-column
+                                type="selection"
+                                width="55">
+                        </el-table-column>
+                        <!--行编号-->
+                        <el-table-column
+                                type="index"
+                                width="50">
+                        </el-table-column>
+                        <!--列-->
+                        <el-table-column
+                                prop="studentid"
+                                label="学号"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="student_name"
+                                label="姓名"
+                                align="center"
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="classid"
+                                label="班级"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="subjectid"
+                                label="学科"
+                                align="center"
+
+                        >
+                        </el-table-column>
+                        <el-table-column
+                                prop="score"
+                                align="center"
+                                label="分数"
+                        >
+                        </el-table-column>
+
+                    </el-table>
+
+                </template>
+                <!--在下面是分页条-->
+                <!--页码数据通过连接数据库更改vue中模型来动态变化-->
+                <el-pagination
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="currentPage"
+                        :page-sizes="[10, 20, 30, 40]"
+                        :page-size="10"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total=totalCount>
+                </el-pagination>
+
+
+            </el-main>
+
+        </el-container>
+    </el-container>
+
+</div>
+</body>
+<!--因为element是基于vue的，所有我们还得先要创建vue的核心对象-->
+<script>
+    new Vue({
+        el: "#app",
+        mounted(){
+            /*当页面加载完成后直接自动执行获取用户名*/
+            var _this0=this;
+            axios({
+                method:"get",
+                url:"http://localhost:8080/Sams_homework_war/ReturnUserName",
+            }).then(function (resp) {
+                _this0.Username= resp.data;
+            })
+        },
+        methods: {
+            /*退出系统*/
+            quit() {
+                location.href="http://localhost:8080/Sams_homework_war/Login.jsp";
+            },
+            /*左侧导航栏实现页面跳转*/
+            moto1(id) {
+                var myid = id;
+                switch (myid) {
+                    case 'browse_score':
+                        this.moveto1 = "browse_score";
+                        break;
+                    case 'edit_score':
+                        this.moveto1 = "edit_score";
+                        break;
+                    case 'browse_student':
+                        this.moveto1 = "browse_student";
+                        break;
+                    case 'edit_student':
+                        this.moveto1 = "edit_student";
+                        break
+                    case 'browse_subject':
+                        this.moveto1 = "browse_subject";
+                        break;
+                    case 'edit_subject':
+                        this.moveto1 = "edit_subject";
+                        break;
+                    case 'browse_class':
+                        this.moveto1 = 'browse_class';
+                        break;
+                    case 'edit_class':
+                        this.moveto1 = 'edit_class';
+                        break;
+                }
+            },
+            /*成绩浏览(带分页功能)*/
+            selectallscore() {
+                /*var this3 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Browse_score_Servlet"
+                }).then(function (resp) {
+                    this3.tableData = resp.data;
+                });*/
+                var this3 = this;
+                axios({
+                    method: "get",
+                    url: "http://localhost:8080/Sams_homework_war/Studentduan_score_select?currentPage="+this3.currentPage+"&pageSize="+this3.pageSize+"&username="+this3.Username,
+                }).then(function (resp) {
+                    /*设置表格数据*/
+                    this3.tableData = resp.data.rows;
+                    /*设置数据总数*/
+                    this3.totalCount=resp.data.totalCount;
+                });
+
+            },
+
+            tableRowClassName({row, rowIndex}) {
+
+                /*if (rowIndex == 1) {
+                    return 'danger-row';
+                } else if (rowIndex == 3) {
+                    return 'success-row';
+                }*/
+                return '';
+            },
+
+            /*成绩分页工具条对应的方法*/
+            handleSizeChange(val) {
+                /*设置每页显示的条数*/
+                this.pageSize=val;
+                this.selectallscore();
+            },
+            handleCurrentChange(val) {
+                /*设置当前页码*/
+                this.currentPage=val;
+                this.selectallscore();
+            },
+
+
+        },
+        data() {
+            return {
+                Username:"",
+                /*用来配合退出系统的*/
+                quit1:"yes",
+                /*用来配合左边导航栏跳转*/
+                moveto1: "",
+                /*表格下面分页条的数据模型 表示当前页码,数据总数，以及每页显示的条数*/
+                currentPage: 1,
+                totalCount:100,
+                pageSize:10,
+
+                /*表格数据*/
+                tableData: [],
+
+            }
+        }
+
+    });
+</script>
+</html>
