@@ -5,7 +5,7 @@
 <configuration>
     <!--给pojo里的类有一个注册，这样在mapper代理里写返回类型的时候就可以不用写全称了，直接可以写类名-->
     <typeAliases>
-        <package name="com.sams.pojo"/>
+        <package name="com.gmy.pojo"/>
     </typeAliases>
 
     <environments default="development">
@@ -20,6 +20,6 @@
         </environment>
     </environments>
     <mappers>
-        <package name="com.sams.dao"/>
+        <package name="com.gmy.dao"/>
     </mappers>
 </configuration>

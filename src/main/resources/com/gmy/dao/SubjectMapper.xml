@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.gmy.dao.SubjectMapper">
+
+    <insert id="Addsubject">
+        insert into teacher_and_subject (teacherid, subjectid)
+        VALUES (#{teacherid}, #{subjectid});
+    </insert>
+    <insert id="Addunknowsubject">
+        insert into subject (subject_id, subject_name) VALUES (#{subject_id},#{subject_name});
+    </insert>
+    <delete id="deletesubject">
+        delete from teacher_and_subject where teacherid=#{teacherid} and subjectid=#{subjectid};
+    </delete>
+
+
+    <select id="selectBypage" resultType="com.gmy.pojo.Subject">
+        select *
+        from teacher_and_subject
+        where teacherid = #{teacherid}
+        limit #{begin},#{size};
+    </select>
+    <select id="selectTotalCount" resultType="java.lang.Integer">
+        select count(*)
+        from teacher_and_subject
+        where teacherid = #{teacherid};
+    </select>
+    <select id="selectall" resultType="com.gmy.pojo.Subject">
+        select * from subject where subject_id=#{subject_id};
+    </select>
+</mapper>

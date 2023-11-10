@@ -1,10 +1,6 @@
-import com.sams.dao.ScoreMapper;
-import com.sams.dao.StudentMapper;
-import com.sams.pojo.Query1;
-import com.sams.pojo.Score;
-import com.sams.pojo.Student;
-import com.sams.pojo.Student_score_subject;
-import com.sams.util.SqlSF_tools;
+import com.gmy.dao.ScoreMapper;
+import com.gmy.pojo.Student_score_subject;
+import com.gmy.util.SqlSF_tools;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 

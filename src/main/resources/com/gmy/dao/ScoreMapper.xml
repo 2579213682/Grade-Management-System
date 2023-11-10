@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.gmy.dao.ScoreMapper">
+    <!--表单动态sql查询成绩 要解决笛卡儿积的问题-->
+    <!--这个sql有问题，还没解决-->
+    <select id="QueryScore" resultType="com.gmy.pojo.Student_score_subject">
+        select studentid, subjectid, score, student_name, classid from student,score,subject
+        <where>
+            <!--类型1：student_id不为null，但subjectid为null，查出的是某人的所有成绩 sql有效！-->
+            <if test="Query1.studentid!=null and Query1.studentid!='' and Query1.subjectid =null ">
+                student.student_id=#{Query1.studentid} and student.student_id=score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+
+            <!--类型2：student_id和subjectid都不为null，查出的是某人的某科成绩  sql有效！-->
+            <if test="Query1.studentid!=null and Query1.subjectid !=null">
+                student.student_id=#{Query1.studentid} and subjectid=#{Query1.subjectid} and
+                student.student_id=score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+
+            <!--类型3：classid不为null，student_id和subjectid都为null，查询一个班所有同学的所有成绩 sql有效！-->
+            <if test="Query1.classid !=null and Query1.classid !='' and Query1.studentid=null and Query1.subjectid =null ">
+                classid=#{Query1.classid} and student.student_id = score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+
+            <!--类型4：subjectid不为null，student_id为null，查询某一科所有人的成绩-->
+            <if test="Query1.subjectid !=null  and Query1.student_id=null">
+                score.subjectid=#{Query1.subjectid} and student.student_id = score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+        </where>
+        limit #{begin},#{size};
+    </select>
+
+    <!--条件查询分页用到的总数据数-->
+    <select id="selectTotalCountbyCondition" resultType="java.lang.Integer">
+        select count(*)from student,score,subject
+        <where>
+            <!--类型1：student_id不为null，但subjectid为null，查出的是某人的所有成绩 sql有效！-->
+            <if test="studentid!=null and studentid!='' and subjectid =null ">
+                student.student_id=#{studentid} and student.student_id=score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+
+            <!--类型2：student_id和subjectid都不为null，查出的是某人的某科成绩  sql有效！-->
+            <if test="studentid!=null and subjectid !=null">
+                student.student_id=#{studentid} and subjectid=#{subjectid} and
+                student.student_id=score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+
+            <!--类型3：classid不为null，student_id和subjectid都为null，查询一个班所有同学的所有成绩 sql有效！-->
+            <if test="classid !=null and classid !='' and studentid=null and subjectid =null ">
+                classid=#{classid} and student.student_id = score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+
+            <!--类型4：subjectid不为null，student_id为null，查询某一科所有人的成绩-->
+            <if test="subjectid !=null  and student_id=null">
+                score.subjectid=#{subjectid} and student.student_id = score.studentid
+                and subject.subject_id = score.subjectid
+            </if>
+        </where>
+    </select>
+
+
+    <!--直接显示所有人的所有成绩-->
+    <select id="selectall" resultType="com.gmy.pojo.Student_score_subject">
+        select studentid, subjectid, score, student_name, classid
+        from score,
+             student
+        where score.studentid = student_id;
+    </select>
+    <!--成绩录入功能-->
+    <insert id="addscore">
+        insert into score (studentid, subjectid, score)
+        VALUES (#{studentid}, #{subjectid}, #{score});
+    </insert>
+
+    <!--分页查询-->
+    <select id="selectBypage" resultType="com.gmy.pojo.Student_score_subject">
+        select studentid, subjectid, score, student_name, classid
+        from score,
+             student
+        where score.studentid = student_id
+        limit #{begin},#{size};
+    </select>
+    <select id="selectTotalCount" resultType="java.lang.Integer">
+        select count(*)
+        from score;
+    </select>
+    <select id="selectBypagetostudent" resultType="com.gmy.pojo.Student_score_subject">
+        select studentid, subjectid, score, student_name, classid
+        from score,
+             student
+        where score.studentid = student_id
+          and student.student_id = #{studentid}
+        limit #{begin},#{size};
+    </select>
+    <select id="selectTotalCounttostudent" resultType="java.lang.Integer">
+        select count(*)
+        from score
+        where studentid = #{studentid};
+    </select>
+    <!--删除功能-->
+    <delete id="deletedata">
+        delete
+        from score
+        where studentid = #{studentid}
+          and subjectid = #{subjectid};
+    </delete>
+    <!--修改功能-->
+    <update id="updateddata">
+        update score
+        set score=#{score}
+        where studentid = #{studentid}
+          and subjectid = #{subjectid};
+    </update>
+
+
+</mapper>
