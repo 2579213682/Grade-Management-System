@@ -32,7 +32,7 @@ public class Login extends HttpServlet {
             HttpSession session = request.getSession();
             session.setAttribute("user",user);
             session.setAttribute("userid",user.getId());
-            response.sendRedirect("http://localhost:8080/Sams_homework_war/TeacherPage_Browse_score.html");
+            response.sendRedirect("http://localhost:8080/gmy_homework_war/TeacherPage_Browse_score.html");
 
 
         } else if (teacherlogin == false && studentlogin == true) {
@@ -42,7 +42,7 @@ public class Login extends HttpServlet {
             HttpSession session = request.getSession();
             session.setAttribute("user",user);
             session.setAttribute("userid",user.getId());
-            response.sendRedirect("http://localhost:8080/Sams_homework_war/StudentMainPage.html");
+            response.sendRedirect("http://localhost:8080/gmy_homework_war/StudentMainPage.html");
 
         } else {
             if (teacherlogin ==false && studentlogin ==false){

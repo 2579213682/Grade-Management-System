@@ -16,7 +16,7 @@ public class Quit extends HttpServlet {
             /*直接把登录完成后的session给销毁掉*/
             HttpSession session = request.getSession();
             session.invalidate();
-            response.sendRedirect("http://localhost:8080/Sams_homework_war/Login.jsp");
+            response.sendRedirect("http://localhost:8080/gmy_homework_war/Login.jsp");
         }
 
     }

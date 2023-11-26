@@ -22,7 +22,7 @@ public class Register extends HttpServlet {
         student.setStudent_password(checkpassword);
         boolean studentregister = ss.studentregister(student);
         if (studentregister){
-            response.sendRedirect("http://localhost:8080/Sams_homework_war/Login");
+            response.sendRedirect("http://localhost:8080/gmy_homework_war/Login");
         }else {
             request.setAttribute("tell1","注册失败，请重新尝试！");
             request.getRequestDispatcher("Register.jsp").forward(request,response);

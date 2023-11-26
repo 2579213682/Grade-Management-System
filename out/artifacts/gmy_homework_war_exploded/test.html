@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="js/vue.js"></script>
+</head>
+<body>
+<input type="button" id="b1" value="点我跳到b站">
+</body>
+<script>
+  var b1 = document.getElementById("b1");
+  b1.onclick=function dianji() {
+    let b = confirm("你确定要进行跳转吗？");
+    if (b){
+      document.write("3秒后进行跳转")
+      setTimeout(function tiaozhuan() {
+        location.href="http://www.bilibili.com";
+
+      },3000)
+    }
+
+  }
+
+
+</script>
+</html>
